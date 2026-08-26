@@ -1,0 +1,15 @@
+{
+  "appId": "tw.gov.wanfang.quitvape",
+  "appName": "好好呼吸",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_breathe",
+      "iconColor": "#0E7C7B"
+    }
+  }
+}
