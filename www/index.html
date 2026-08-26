@@ -1,1 +1,1119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>好好呼吸 — 青少年戒電子煙支援系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   設計 token
+   ============================================================ */
+:root{
+  --ink:      #0E1B2C;   /* 墨藍：主要文字 */
+  --ink-60:   #4A5A6E;
+  --ink-35:   #8595A6;
+  --mist:     #EEF3F2;   /* 霧白：底色 */
+  --paper:    #FFFFFF;
+  --teal:     #0E7C7B;   /* 臨床青：主色 */
+  --teal-dk:  #075453;
+  --breath:   #7ADBD4;   /* 呼吸青：進度、動態 */
+  --ember:    #E2532C;   /* 餘燼橘：渴望、警示 */
+  --sand:     #F2B950;   /* 沙金：里程碑 */
+  --line:     rgba(14,27,44,.12);
+
+  --r-s: 10px; --r-m: 16px; --r-l: 26px;
+  --sp: 16px;
+  --shadow: 0 1px 2px rgba(14,27,44,.06), 0 12px 32px -18px rgba(14,27,44,.35);
+
+  --font-body: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --font-num:  "Space Grotesk","Noto Sans TC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font-body);
+  background:var(--mist);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.65;
+}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px;border-radius:4px}
+
+/* ============================================================
+   版面
+   ============================================================ */
+.app{max-width:560px;margin:0 auto;padding:0 var(--sp) 120px;min-height:100vh}
+
+.topbar{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding:22px 0 10px;
+}
+.brand{font-weight:900;font-size:19px;letter-spacing:.02em}
+.brand span{color:var(--teal)}
+.topbar .meta{font-family:var(--font-num);font-size:12px;color:var(--ink-35);letter-spacing:.06em}
+
+.card{
+  background:var(--paper);
+  border-radius:var(--r-m);
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin-bottom:14px;
+}
+.card h2{
+  font-size:13px;font-weight:700;letter-spacing:.14em;
+  color:var(--ink-35);margin:0 0 12px;text-transform:uppercase;
+}
+.card h2 em{font-style:normal;font-family:var(--font-num);color:var(--teal)}
+
+.muted{color:var(--ink-60);font-size:14px}
+.tiny{font-size:12px;color:var(--ink-35);line-height:1.6}
+
+/* ============================================================
+   呼吸計（signature）
+   ============================================================ */
+.meter{
+  position:relative;display:grid;place-items:center;
+  padding:28px 0 20px;
+}
+.meter svg{width:230px;height:230px;transform:rotate(-90deg)}
+.meter .track{fill:none;stroke:rgba(14,124,123,.12);stroke-width:10}
+.meter .prog{fill:none;stroke:var(--teal);stroke-width:10;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)}
+.meter .halo{fill:none;stroke:var(--breath);stroke-width:2;opacity:.55;
+  transform-origin:center;animation:breathe 11s ease-in-out infinite}
+@keyframes breathe{
+  0%,100%{transform:scale(.90);opacity:.20}
+  36%    {transform:scale(1.03);opacity:.60}
+  64%    {transform:scale(1.03);opacity:.60}
+}
+.meter .readout{position:absolute;text-align:center;line-height:1.1}
+.readout .n{font-family:var(--font-num);font-size:62px;font-weight:700;letter-spacing:-.02em;display:block}
+.readout .u{font-size:13px;color:var(--ink-60);letter-spacing:.1em;display:block;margin-top:6px}
+.readout .state{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:.1em;display:block;margin-top:10px}
+
+/* ============================================================
+   每日訊息
+   ============================================================ */
+.msg{
+  border-left:3px solid var(--teal);
+  padding:2px 0 2px 16px;
+  font-size:17px;line-height:1.75;font-weight:500;
+}
+.msg .tagline{
+  display:inline-block;font-family:var(--font-num);font-size:11px;letter-spacing:.14em;
+  color:var(--teal);margin-bottom:8px;
+}
+
+/* ============================================================
+   按鈕
+   ============================================================ */
+.btn{
+  display:block;width:100%;border:0;cursor:pointer;
+  background:var(--teal);color:#fff;font-weight:700;font-size:15px;
+  padding:15px;border-radius:var(--r-s);
+  transition:transform .12s ease, background .2s ease;
+}
+.btn:active{transform:scale(.985)}
+.btn.ghost{background:transparent;color:var(--teal);border:1.5px solid rgba(14,124,123,.35)}
+.btn.ember{background:var(--ember)}
+.btn.dark{background:var(--ink)}
+.btn+.btn{margin-top:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.choices{display:grid;gap:10px}
+.choice{
+  text-align:left;border:1.5px solid var(--line);background:var(--paper);
+  padding:14px 16px;border-radius:var(--r-s);cursor:pointer;font-size:15px;
+  transition:border-color .18s ease, background .18s ease;
+  color:var(--ink);
+}
+.choice:hover{border-color:var(--teal)}
+.choice[aria-pressed="true"]{border-color:var(--teal);background:rgba(14,124,123,.07);font-weight:700}
+.choice small{display:block;color:var(--ink-35);font-size:12px;font-weight:400;margin-top:2px}
+
+/* ============================================================
+   SOS
+   ============================================================ */
+.sos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sos-btn{
+  border:0;cursor:pointer;text-align:left;padding:16px;border-radius:var(--r-m);
+  background:var(--ink);color:#fff;font-size:16px;font-weight:700;line-height:1.35;
+  min-height:88px;display:flex;flex-direction:column;justify-content:flex-end;
+  transition:transform .12s ease;
+}
+.sos-btn:active{transform:scale(.98)}
+.sos-btn i{font-style:normal;font-family:var(--font-num);font-size:11px;letter-spacing:.14em;
+  opacity:.55;font-weight:500;margin-bottom:auto}
+.sos-btn.crave{background:var(--ember)}
+.sos-btn.mood{background:var(--teal)}
+.sos-btn.stress{background:#3C5A73}
+.sos-btn.why{background:var(--ink)}
+.sos-btn.slip{background:var(--teal-dk)}
+.sos-btn.wide{grid-column:1/-1;min-height:66px}
+
+.sos-out{margin-top:14px;padding:18px;border-radius:var(--r-m);
+  background:rgba(14,124,123,.08);font-size:16px;line-height:1.75;display:none}
+.sos-out.show{display:block;animation:rise .4s cubic-bezier(.22,1,.36,1)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* 呼吸引導全螢幕 */
+.breath-overlay{
+  position:fixed;inset:0;background:var(--ink);color:#fff;z-index:60;
+  display:none;place-items:center;text-align:center;padding:24px;
+}
+.breath-overlay.show{display:grid}
+.orb{width:180px;height:180px;border-radius:50%;margin:0 auto 30px;
+  background:radial-gradient(circle at 35% 30%, var(--breath), var(--teal));
+  animation:orb 19s ease-in-out infinite}
+@keyframes orb{
+  0%,100%{transform:scale(.62)}
+  21%    {transform:scale(1)}
+  58%    {transform:scale(1)}
+  95%    {transform:scale(.62)}
+}
+.breath-cue{font-size:22px;font-weight:700;letter-spacing:.12em;min-height:34px}
+.breath-count{font-family:var(--font-num);font-size:13px;opacity:.55;letter-spacing:.18em;margin-top:12px}
+.breath-overlay .btn{max-width:280px;margin:34px auto 0}
+
+/* ============================================================
+   追蹤
+   ============================================================ */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:var(--paper);border-radius:var(--r-m);padding:16px;box-shadow:var(--shadow)}
+.stat .v{font-family:var(--font-num);font-size:30px;font-weight:700;line-height:1}
+.stat .k{font-size:11px;color:var(--ink-35);letter-spacing:.1em;margin-top:8px}
+.stat.yes .v{color:var(--teal)} .stat.no .v{color:var(--ember)}
+
+.log{list-style:none;margin:0;padding:0}
+.log li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.log li:last-child{border-bottom:0}
+.log .when{font-family:var(--font-num);font-size:12px;color:var(--ink-35);min-width:78px;padding-top:2px}
+.log .dot{width:9px;height:9px;border-radius:50%;margin-top:7px;flex:none}
+.dot.abst{background:var(--teal)} .dot.use{background:var(--ember)} .dot.cut{background:var(--sand)}
+
+/* ============================================================
+   表單
+   ============================================================ */
+label.f{display:block;font-size:13px;font-weight:700;color:var(--ink-60);margin:16px 0 7px}
+input[type=text],input[type=date],select{
+  width:100%;padding:13px;border:1.5px solid var(--line);border-radius:var(--r-s);
+  font-family:inherit;font-size:15px;background:var(--paper);color:var(--ink);
+}
+input:focus,select:focus{border-color:var(--teal);outline:none}
+
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.scale button{
+  border:1.5px solid var(--line);background:var(--paper);border-radius:var(--r-s);
+  padding:12px 0;font-family:var(--font-num);font-size:15px;cursor:pointer;color:var(--ink);
+}
+.scale button[aria-pressed="true"]{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.dep-bar{height:9px;border-radius:99px;background:rgba(14,27,44,.08);overflow:hidden;margin:12px 0 8px}
+.dep-bar i{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+
+/* ============================================================
+   分頁列
+   ============================================================ */
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding:8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{
+  border:0;background:none;cursor:pointer;padding:8px 2px;
+  font-size:12px;font-weight:700;color:var(--ink-35);letter-spacing:.06em;
+}
+.tab[aria-selected="true"]{color:var(--teal)}
+.tab .bar{display:block;height:3px;width:26px;margin:0 auto 8px;border-radius:99px;background:transparent}
+.tab[aria-selected="true"] .bar{background:var(--teal)}
+
+.view{display:none} .view.on{display:block;animation:rise .3s ease}
+
+.note{
+  background:rgba(242,185,80,.14);border-radius:var(--r-s);padding:13px 15px;
+  font-size:12.5px;line-height:1.7;color:var(--ink-60);
+}
+.res a{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:13px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:15px}
+.res a:last-child{border-bottom:0}
+.res b{font-weight:700}
+.res span{font-family:var(--font-num);color:var(--teal);font-weight:700;font-size:14px;white-space:nowrap}
+
+/* ============================================================
+   首次啟動 · 定位說明
+   ============================================================ */
+.intro{
+  position:fixed;inset:0;z-index:70;background:var(--mist);
+  overflow-y:auto;display:none;
+}
+.intro.show{display:block}
+.intro .wrap{max-width:520px;margin:0 auto;padding:56px 22px calc(28px + env(safe-area-inset-bottom))}
+.intro h1{font-size:27px;font-weight:900;line-height:1.4;margin:0 0 10px}
+.intro h1 span{color:var(--teal)}
+.intro .lede{font-size:15px;color:var(--ink-60);margin:0 0 34px}
+.point{display:flex;gap:15px;margin-bottom:26px}
+.point .mark{
+  flex:none;width:38px;height:38px;border-radius:12px;background:var(--teal);
+  display:grid;place-items:center;color:#fff;font-family:var(--font-num);
+  font-size:15px;font-weight:700;margin-top:2px;
+}
+.point .mark.warn{background:var(--ember)}
+.point h3{margin:0 0 5px;font-size:16.5px;font-weight:700;line-height:1.45}
+.point p{margin:0;font-size:14.5px;color:var(--ink-60);line-height:1.75}
+.point p b{color:var(--ink);font-weight:700}
+.intro .lines{margin:26px 0 0;padding:16px 18px;background:var(--paper);
+  border-radius:var(--r-m);box-shadow:var(--shadow)}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<!-- 首次啟動 · 定位說明 -->
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="wrap">
+    <h1 id="introTitle">開始之前，<br>先講清楚<span>三件事</span></h1>
+    <p class="lede">花 30 秒看完，你會知道這個程式能幫你什麼、不能幫你什麼。</p>
+
+    <div class="point">
+      <div class="mark">1</div>
+      <div>
+        <h3>這是支持工具，不是醫療服務</h3>
+        <p>這裡提供的是<b>衛教資訊和行為改變的方法</b>。它不會診斷你、不會判斷你的依賴程度、也不會取代醫師、護理師或戒菸衛教師。想要專業評估或用藥的討論，請找醫療人員。</p>
+      </div>
+    </div>
+
+    <div class="point">
+      <div class="mark">2</div>
+      <div>
+        <h3>你記的東西只留在這支手機裡</h3>
+        <p>戒菸日、每天的紀錄、自我檢視的答案，<b>全部存在你的裝置上</b>，不會上傳、不會通報學校或家長，也沒有人在後台看。要移除的話，刪掉這個程式就一起沒了。</p>
+      </div>
+    </div>
+
+    <div class="point">
+      <div class="mark warn">3</div>
+      <div>
+        <h3>有些狀況要找真人，不要只靠程式</h3>
+        <p>如果你<b>心情持續低落超過兩週、有傷害自己的念頭、或是身體出現讓你擔心的狀況</b>，請打下面的專線，或告訴一位你信任的大人。這些不是這個程式處理得來的事。</p>
+      </div>
+    </div>
+
+    <div class="lines res">
+      <a href="tel:0800636363"><b>免費戒菸專線</b><span>0800-636-363</span></a>
+      <a href="tel:1925"><b>心理健康 · 安心專線</b><span>1925</span></a>
+    </div>
+
+    <button class="btn" style="margin-top:26px" onclick="closeIntro()">我知道了，開始使用</button>
+    <p class="tiny" style="text-align:center;margin-top:14px">之後可以在「我的」分頁再看一次這些說明。</p>
+  </div>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">好好<span>呼吸</span></div>
+    <div class="meta" id="topMeta">尚未設定</div>
+  </header>
+
+  <!-- ========== 今天 ========== -->
+  <section class="view on" id="v-today" role="tabpanel" aria-label="今天">
+    <div class="card" style="padding-top:6px">
+      <div class="meter">
+        <svg viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="halo" cx="120" cy="120" r="86"></circle>
+          <circle class="track" cx="120" cy="120" r="102"></circle>
+          <circle class="prog" id="prog" cx="120" cy="120" r="102"
+                  stroke-dasharray="641" stroke-dashoffset="641"></circle>
+        </svg>
+        <div class="readout">
+          <span class="n" id="dayNum">—</span>
+          <span class="u" id="dayUnit">還沒開始</span>
+          <span class="state" id="dayState"></span>
+        </div>
+      </div>
+      <button class="btn ember" onclick="go('sos')">現在很想抽 → 開啟急救</button>
+    </div>
+
+    <div class="card">
+      <h2>今天的訊息 <em id="msgPhase"></em></h2>
+      <div class="msg" id="dailyMsg">
+        <span class="tagline">START</span>
+        先到「我的」設定你的狀況，訊息才會跟著你的進度走。
+      </div>
+    </div>
+
+    <div class="card" id="checkinCard">
+      <h2>今天的紀錄</h2>
+      <p class="muted" style="margin:0 0 12px">最近一次吸電子煙是什麼時候？</p>
+      <div class="choices">
+        <button class="choice" data-ci="use"><b>7 天內抽過</b><small>包含只吸一口</small></button>
+        <button class="choice" data-ci="cut"><b>8–30 天前</b><small>已經一週以上沒抽</small></button>
+        <button class="choice" data-ci="abst"><b>超過 30 天沒抽了</b><small>達成 30 天點盛行戒菸</small></button>
+      </div>
+      <p class="tiny" id="ciDone" style="margin-top:12px"></p>
+    </div>
+  </section>
+
+  <!-- ========== 急救 ========== -->
+  <section class="view" id="v-sos" role="tabpanel" aria-label="急救">
+    <div class="card">
+      <h2>渴望急救包</h2>
+      <p class="muted" style="margin:0 0 14px">選一個現在最接近的狀況。多數渴望的高峰只有 3 到 5 分鐘。</p>
+      <div class="sos-grid">
+        <button class="sos-btn crave" data-sos="crave"><i>CRAVE</i>好想抽</button>
+        <button class="sos-btn mood"  data-sos="mood"><i>MOOD</i>心情很差</button>
+        <button class="sos-btn stress" data-sos="stress"><i>STRESS</i>壓力大</button>
+        <button class="sos-btn why"   data-sos="why"><i>WHY</i>忘了為什麼</button>
+        <button class="sos-btn slip wide" data-sos="slip"><i>SLIP</i>剛剛抽了，想放棄</button>
+      </div>
+      <div class="sos-out" id="sosOut"></div>
+      <button class="btn dark" style="margin-top:14px" onclick="startBreath()">60 秒呼吸引導</button>
+    </div>
+
+    <div class="card">
+      <h2>撐過去的人怎麼做</h2>
+      <p class="muted" style="margin:0 0 10px">研究中的介入包含認知行為因應技巧與同儕支持。這裡是四個當下就能用的：</p>
+      <ul style="margin:0;padding-left:18px;font-size:15px;line-height:1.9">
+        <li>換場景 —— 離開現在這個空間三分鐘就好</li>
+        <li>換動作 —— 手裡拿別的東西：冰水、口香糖、筆</li>
+        <li>延後 —— 跟自己說「十分鐘後再決定」</li>
+        <li>說出來 —— 傳訊息給一個知道你在戒的人</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========== 追蹤 ========== -->
+  <section class="view" id="v-track" role="tabpanel" aria-label="追蹤">
+    <div class="stat-row">
+      <div class="stat" id="statPPA"><div class="v">—</div><div class="k">30 天點盛行戒菸</div></div>
+      <div class="stat" id="statStreak"><div class="v">—</div><div class="k">目前連續未使用天數</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="v" id="statN">0</div><div class="k">已完成評估次數</div></div>
+      <div class="stat"><div class="v" id="statRep">—</div><div class="k">重複點盛行戒菸</div></div>
+    </div>
+
+    <div class="card">
+      <h2>評估時程</h2>
+      <p class="tiny" style="margin:-4px 0 12px">依試驗設計：隨機分派後第 14 天，之後每月一次，至第 7 個月主要結果。</p>
+      <ul class="log" id="schedule"></ul>
+    </div>
+
+    <div class="card">
+      <h2>紀錄</h2>
+      <ul class="log" id="logList"><li class="muted">還沒有紀錄。</li></ul>
+      <button class="btn ghost" style="margin-top:14px" onclick="exportData()">匯出資料（CSV）</button>
+    </div>
+  </section>
+
+  <!-- ========== 我的 ========== -->
+  <section class="view" id="v-me" role="tabpanel" aria-label="我的">
+    <div class="card">
+      <h2>個人化設定</h2>
+      <p class="tiny" style="margin:-4px 0 4px">訊息內容會依年齡、戒菸日、使用產品調整。</p>
+
+      <label class="f" for="fAge">年齡</label>
+      <select id="fAge">
+        <option value="">請選擇</option>
+        <option>13</option><option>14</option><option>15</option>
+        <option>16</option><option>17</option><option>18 以上</option>
+      </select>
+
+      <label class="f" for="fBrand">你主要用的產品或品牌</label>
+      <input type="text" id="fBrand" placeholder="例如：拋棄式主機、油彈式…">
+
+      <label class="f" for="fQuit">你的戒菸日</label>
+      <input type="date" id="fQuit">
+      <p class="tiny" style="margin-top:8px">還沒準備好也沒關係。留空的話，系統會給你 4 週建立信心的訊息，之後隨時可以再設定。</p>
+
+      <label class="f">戒菸的動機（1 完全沒有 – 5 非常強）</label>
+      <div class="scale" id="sMot"></div>
+
+      <label class="f">戒得掉的信心（1 完全沒有 – 5 非常強）</label>
+      <div class="scale" id="sConf"></div>
+
+      <button class="btn" style="margin-top:22px" onclick="saveProfile()">儲存設定</button>
+    </div>
+
+    <div class="card">
+      <h2>使用樣態自我檢視</h2>
+      <p class="tiny" style="margin:-4px 0 14px">六個情境，約 30 秒。這是給你自己看的，不會評等級、不會診斷，也不會改變這個程式提供給你的內容。</p>
+      <div id="depQs"></div>
+      <div class="dep-bar"><i id="depFill" style="width:0%;background:var(--teal)"></i></div>
+      <p class="muted" id="depResult" style="margin:0;font-size:14px">尚未作答</p>
+      <p class="tiny" style="margin:10px 0 0">想知道自己的狀況到什麼程度，可以打免費戒菸專線 0800-636-363，由專業人員跟你談。</p>
+    </div>
+
+    <div class="card">
+      <h2>資源</h2>
+      <div class="res">
+        <a href="tel:0800636363"><b>免費戒菸專線</b><span>0800-636-363</span></a>
+        <a href="tel:1925"><b>心理健康 · 安心專線</b><span>1925</span></a>
+        <a href="tel:1980"><b>張老師輔導專線</b><span>1980</span></a>
+        <a href="tel:1995"><b>生命線</b><span>1995</span></a>
+      </div>
+      <p class="tiny" style="margin-top:14px">如果你現在覺得很不好、有傷害自己的念頭，請打 1925，或找一位你信任的大人。這件事不用自己扛。</p>
+    </div>
+
+    <div class="card">
+      <h2>提醒通知</h2>
+      <p class="tiny" style="margin:-4px 0 14px">每天一則訊息，依你的戒菸日排程。全部在你的手機上產生，不經過網路。</p>
+
+      <div class="choices">
+        <button class="choice" id="notifToggle" onclick="toggleNotif()">
+          <b id="notifLabel">開啟每日提醒</b>
+          <small id="notifHint">需要允許通知權限</small>
+        </button>
+      </div>
+
+      <label class="f" for="fHour">提醒時間</label>
+      <select id="fHour" onchange="onNotifPrefChange()">
+        <option value="8">早上 8:00</option>
+        <option value="12">中午 12:00</option>
+        <option value="16">下午 4:00</option>
+        <option value="19" selected>晚上 7:00</option>
+        <option value="21">晚上 9:00</option>
+      </select>
+
+      <div class="choices" style="margin-top:14px">
+        <button class="choice" id="discreetBtn" onclick="toggleDiscreet()">
+          <b>低調模式</b>
+          <small>通知上只顯示「今天有一則訊息」，內容要打開程式才看得到</small>
+        </button>
+      </div>
+
+      <p class="tiny" id="notifStatus" style="margin:14px 0 0"></p>
+    </div>
+
+    <div class="card">
+      <h2>這個程式能幫你什麼</h2>
+      <p class="muted" style="margin:0 0 14px;font-size:14px">支持工具，不是醫療服務；紀錄只留在你的手機；有些狀況要找真人。</p>
+      <button class="btn ghost" onclick="openIntro()">再看一次開始前的說明</button>
+    </div>
+
+    <div class="card">
+      <h2>關於這個原型</h2>
+      <p class="tiny" style="margin:0">介入架構參考 Graham 等人（JAMA. 2024;332(9):713-721）之隨機分派試驗：設定戒菸日者於戒菸日前 6 週至後 8 週接收訊息，未設定者接收 4 週技巧建立訊息；並以 30 天點盛行戒菸為主要結果。本程式為獨立實作，訊息內容為自行撰寫，非該試驗使用之原始訊息庫；「使用樣態自我檢視」為自行撰寫之情境題，非已驗證量表，不產生分級或判讀，亦不影響程式提供之內容。本程式僅提供一般衛教資訊與行為改變支持，不進行診斷、治療或個別化醫療建議，預期用途詳見隨附之 INTENDED_USE.md。研究或臨床部署前須經 IRB 審查、臨床團隊審閱訊息內容，並取得正式量表授權。</p>
+    </div>
+  </section>
+</div>
+
+<!-- 呼吸引導 -->
+<div class="breath-overlay" id="breathOv" role="dialog" aria-modal="true" aria-label="呼吸引導">
+  <div>
+    <div class="orb"></div>
+    <div class="breath-cue" id="breathCue">準備</div>
+    <div class="breath-count" id="breathCount"></div>
+    <button class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="stopBreath()">結束</button>
+  </div>
+</div>
+
+<nav class="tabs">
+  <div class="in" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-go="today"><span class="bar"></span>今天</button>
+    <button class="tab" role="tab" aria-selected="false" data-go="sos"><span class="bar"></span>急救</button>
+    <button class="tab" role="tab" aria-selected="false" data-go="track"><span class="bar"></span>追蹤</button>
+    <button class="tab" role="tab" aria-selected="false" data-go="me"><span class="bar"></span>我的</button>
+  </div>
+</nav>
+
+<script>
+/* ============================================================
+   儲存層 —— 自動偵測，不需要為不同部署環境改旗標
+
+   1. window.storage       預覽環境提供的橋接
+   2. localStorage         GitHub Pages 與 Capacitor WebView 都走這條
+   3. 記憶體                前兩者都不可用時的退路（重整即消失）
+
+   資料一律留在使用者裝置端，不傳送到任何伺服器，
+   與 INTENDED_USE.md 第 6 節一致。
+   ============================================================ */
+const KEY = 'quitvape:v1';
+let MEM = null;
+
+const BACKEND = (() => {
+  if (window.storage) return 'bridge';
+  try{
+    const probe = '__quitvape_probe';
+    localStorage.setItem(probe, '1');
+    localStorage.removeItem(probe);
+    return 'local';
+  }catch(e){
+    return 'memory';   // 無痕模式或封鎖第三方儲存時會走到這裡
+  }
+})();
+
+async function load(){
+  try{
+    if (BACKEND === 'bridge'){
+      const r = await window.storage.get(KEY);
+      return r ? JSON.parse(r.value) : null;
+    }
+    if (BACKEND === 'local'){
+      return JSON.parse(localStorage.getItem(KEY) || 'null');
+    }
+  }catch(e){ /* 第一次使用時讀不到是正常的 */ }
+  return MEM;
+}
+
+async function save(s){
+  MEM = s;
+  try{
+    if (BACKEND === 'bridge'){ await window.storage.set(KEY, JSON.stringify(s)); return; }
+    if (BACKEND === 'local'){ localStorage.setItem(KEY, JSON.stringify(s)); return; }
+  }catch(e){ console.warn('儲存失敗，資料僅保留在本次操作中'); }
+}
+
+/* ============================================================
+   狀態
+   ============================================================ */
+let S = {
+  age:'', brand:'', quitDate:null, startDate:null,
+  motivation:0, confidence:0, dep:{}, depScore:null,
+  notifOn:false, notifHour:19, discreet:false, notifCount:0, introSeen:false,
+  checkins:[]   // {date:'YYYY-MM-DD', v:'use'|'cut'|'abst'}
+};
+
+const today = () => new Date().toISOString().slice(0,10);
+const dayDiff = (a,b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+/* ============================================================
+   訊息庫（自行撰寫，非原試驗訊息）
+   phase: prep 戒菸日前 / d0 戒菸日 / early 1-14 / mid 15-35 / late 36-56 / build 未設戒菸日
+   ============================================================ */
+const LIB = {
+  prep:[
+    ['計畫','先想好戒菸日那天早上，你的手會拿什麼。手上有東西，比空著容易撐。'],
+    ['覺察','今天做一件事就好：每次想抽的時候，記下你人在哪裡。三天後你會看出規律。'],
+    ['技巧','把裝置放在拿起來要多花三十秒的地方。多的那三十秒，就是你做決定的時間。'],
+    ['動機','你戒不是為了讓誰滿意。想一個只屬於你的理由，寫在手機備忘錄第一行。'],
+    ['社會支持','告訴一個人你打算戒。不用講得很正式，「我最近在戒」這五個字就夠了。'],
+    ['身體','尼古丁讓心跳變快、睡不好。戒掉後大概兩週，睡眠會先開始還你。'],
+    ['計畫','列出三個你最容易抽的場合。戒菸日前，先想好那三個場合你要改做什麼。'],
+    ['信心','之前戒失敗過不代表這次會。多數人要試好幾次，每一次都在累積經驗。'],
+    ['技巧','買一包無糖口香糖或酸味硬糖，放在你平常放裝置的口袋。'],
+    ['覺察','你有沒有發現，有些時候不是想抽，只是無聊或不知道手要放哪？'],
+    ['金錢','算一下你一個月花多少在這上面。一年是多少？那筆錢可以換成什麼？'],
+    ['準備','戒菸日前一天，把裝置、油、充電線全部處理掉。留著等於留一個退路。']
+  ],
+  d0:[
+    ['今天','今天開始。不用完美，只要今天不抽。'],
+    ['第一天','前 72 小時最難，這是身體在調整，不是你意志力差。撐過去就會下坡。']
+  ],
+  early:[
+    ['因應','渴望像海浪，會漲也會退。從你注意到它開始算，通常五分鐘內就會弱下來。'],
+    ['身體','戒斷的煩躁、注意力不集中，大多在第 1 到 3 週最明顯，之後會慢慢退。'],
+    ['技巧','現在做四次深呼吸：吸 4 秒、停 4 秒、吐 6 秒。吐氣比吸氣長，身體才會鬆。'],
+    ['支持','今天傳一則訊息給那個知道你在戒的人，只要說「我今天還在」。'],
+    ['提醒','咖啡因在戒斷期會被放大。如果心悸或焦慮變明顯，先減半。'],
+    ['技巧','把想抽的衝動當成資訊：它在告訴你你累了、餓了，還是煩了？先處理那個。'],
+    ['信心','已經到這裡了。回頭看你撐過的天數，不是運氣，是你每天做的選擇。'],
+    ['場合','跟朋友在一起最容易破功。先想好一句話：「我在戒，你們抽你們的。」'],
+    ['身體','嘴巴空空很難受是正常的。冰水、堅果、切成條的紅蘿蔔都有幫助。'],
+    ['心情','戒的時候情緒起伏會變大。這是暫時的，不是你變成一個難相處的人。'],
+    ['技巧','設一個十分鐘計時器。想抽的時候按下去，時間到再決定。多數人不會再想。'],
+    ['提醒','睡眠亂掉很常見。今天提早三十分鐘放下手機，比補眠有效。'],
+    ['里程碑','一週了。你的血中一氧化碳已經降到正常，呼吸會開始變順。'],
+    ['因應','如果今天很想放棄，只承諾撐到睡覺就好。明天再說明天的。']
+  ],
+  mid:[
+    ['維持','過了最難的階段。現在的挑戰不是戒斷，是習慣的空缺。'],
+    ['技巧','找一件會佔住手的事：拼圖、樂器、球、畫畫。空手是最危險的狀態。'],
+    ['提醒','「就抽一口應該沒關係」是最常見的破口。一口會把整條路重新接起來。'],
+    ['身體','大約第三到四週，肺功能開始改善。爬樓梯的時候感覺一下。'],
+    ['心情','如果心情持續低落超過兩週，那可能不只是戒斷。找人談談，1925 隨時有人接。'],
+    ['社會支持','有沒有人問你怎麼做到的？把方法講一遍，你自己也會記得更牢。'],
+    ['金錢','到目前為止你省下的錢，去買一個具體的東西。看得到的獎勵比較有力。'],
+    ['維持','把你的理由再看一次。當初寫的那一行，現在還算數嗎？'],
+    ['技巧','列出你已經成功度過的三個危險場合。下次遇到，你已經知道怎麼做。'],
+    ['提醒','壓力大的時候最容易回頭。先想好：壓力來的時候，除了抽，你還有什麼？']
+  ],
+  late:[
+    ['鞏固','超過一個月了。這時候多數人不再想著抽，而是偶爾被特定場景勾起來。'],
+    ['預防復發','喝酒、熬夜、吵架，是三個最常見的復發情境。提早想好對策。'],
+    ['身分','你現在可以說「我不抽」，而不是「我在戒」。這兩句話的差別比想像中大。'],
+    ['維持','如果不小心抽了，那是一次滑倒，不是全部歸零。今天重新開始就好。'],
+    ['里程碑','兩個月。咳嗽和喉嚨的刺激感應該明顯減少了。'],
+    ['社會支持','你身邊有人也想戒嗎？陪一個人，會讓你自己更難回頭。'],
+    ['鞏固','把急救包裡最有用的那一招記起來。那會是你之後幾年的工具。']
+  ],
+  build:[
+    ['探索','還沒決定戒菸日也沒關係。這四週我們先把工具準備好。'],
+    ['覺察','今天只做一件事：記下你抽的每一次，幾點、在哪裡、跟誰。'],
+    ['技巧','試著把今天的第一次往後延三十分鐘。只是延後，不是不抽。'],
+    ['動機','如果戒掉一年，你的生活會有什麼不一樣？想一個具體的畫面。'],
+    ['資訊','青少年時期接觸尼古丁，會影響學習、記憶和注意力，而且更容易對其他物質成癮。'],
+    ['信心','不用一次到位。少抽也是進步，很多人是從減量開始走到停用的。'],
+    ['技巧','今天挑一個場合不抽：上學路上、打遊戲的時候、睡前，選一個就好。'],
+    ['探索','你覺得自己現在有多想戒？零到十，給一個數字。下週再問一次。'],
+    ['社會支持','有沒有一個人，你講了他不會念你？先從那個人開始說。'],
+    ['準備','準備好的時候，回到「我的」設定戒菸日。訊息會跟著調整。']
+  ]
+};
+
+const SOS = {
+  crave:[
+    '渴望的高峰大概三到五分鐘。現在開始數：離開這個空間，走到別的地方，數 100 步再回來。',
+    '你不是需要它，是你的身體在要一個已經被訓練過的訊號。訊號會過去，你不用照做。',
+    '喝一大杯冰水，慢慢喝。冷刺激會打斷那個自動化的動作序列。',
+    '把手佔住。任何東西都行：筆、鑰匙、橡皮筋。空著的手最容易做出舊動作。'
+  ],
+  mood:[
+    '心情差的時候想抽，是因為尼古丁曾經很快讓你好過一點——但只有幾分鐘，然後更空。',
+    '現在說出三件你看得到的東西、兩個你聽得到的聲音、一件你摸得到的東西。把注意力拉回身體。',
+    '如果這幾天一直很低落，不只是戒斷的問題。打 1925，或找一個你信任的大人談談。'
+  ],
+  stress:[
+    '壓力沒有因為抽而變少，只是被延後了。先做一次長吐氣：吸 4 秒、吐 8 秒，做五次。',
+    '把壓力寫下來，分成「我能做的」和「我不能控制的」兩欄。只處理左邊那欄的第一項。',
+    '起來動一下。三分鐘的走動對急性壓力的效果，比你想像中大。'
+  ],
+  why:[
+    '你當初寫下的理由還在。打開手機備忘錄看一眼。',
+    '想一個具體的畫面：一年後不抽的你，在做什麼、跟誰在一起、身體是什麼感覺。',
+    '你已經撐過的每一天都是理由。不用重新說服自己，只要不推翻已經做到的。'
+  ],
+  slip:[
+    '抽了一次，不等於前面全部作廢。研究上這叫滑倒，多數成功戒掉的人都經歷過。',
+    '現在只做一件事：把手上的東西處理掉，然後決定「下一次」要怎麼做，而不是檢討剛才。',
+    '回想剛剛發生什麼——在哪裡、跟誰、什麼情緒？那是你下一次的預警訊號。'
+  ]
+};
+
+/* 依偏移天數取訊息。同一個偏移量永遠回傳同一則，
+   因此排程時算出來的內容，跟當天打開 app 看到的一致。 */
+function msgAt(d, hasQuit){
+  let pool, phase;
+  if (!hasQuit){
+    pool = LIB.build; phase = '技巧建立 · 第 ' + (d+1) + ' 天';
+  } else if (d < 0)        { pool = LIB.prep;  phase = '戒菸日前 ' + (-d) + ' 天'; }
+  else if (d === 0)        { pool = LIB.d0;    phase = '戒菸日'; }
+  else if (d <= 14)        { pool = LIB.early; phase = '戒菸後第 ' + d + ' 天'; }
+  else if (d <= 35)        { pool = LIB.mid;   phase = '戒菸後第 ' + d + ' 天'; }
+  else if (d <= 56)        { pool = LIB.late;  phase = '戒菸後第 ' + d + ' 天'; }
+  else                     { pool = LIB.late;  phase = '維持期'; }
+  return { m: pool[Math.abs(d) % pool.length], phase };
+}
+
+function pickMsg(){
+  const q = S.quitDate, st = S.startDate || today();
+  return msgAt(q ? dayDiff(q, today()) : dayDiff(st, today()), !!q);
+}
+
+
+/* ============================================================
+   依賴度自評（自行撰寫，非驗證量表）
+   ============================================================ */
+const DEP = [
+  '起床後 30 分鐘內就會想吸',
+  '一天當中大部分時間都在吸',
+  '沒帶在身上會覺得焦躁',
+  '曾經想少吸一點但做不到',
+  '上課或睡前也會忍不住',
+  '覺得自己已經戒不掉了'
+];
+
+function renderDep(){
+  const box = document.getElementById('depQs');
+  box.innerHTML = DEP.map((q,i)=>`
+    <div style="margin-bottom:12px">
+      <div style="font-size:14.5px;margin-bottom:7px">${q}</div>
+      <div class="choices" style="grid-template-columns:1fr 1fr 1fr;display:grid;gap:6px">
+        ${['沒有','有時','經常'].map((l,v)=>
+          `<button class="choice" style="text-align:center;padding:9px 4px;font-size:13px"
+             data-dep="${i}" data-v="${v}" aria-pressed="${S.dep[i]===v}">${l}</button>`).join('')}
+      </div>
+    </div>`).join('');
+  box.querySelectorAll('[data-dep]').forEach(b=>b.onclick=()=>{
+    S.dep[b.dataset.dep] = +b.dataset.v; save(S); renderDep(); scoreDep();
+  });
+  scoreDep();
+}
+/* 只回報「已作答數」與「經常出現的情境數」，不計等級、不做分級判讀。
+   進度條顯示的是完成度，不是嚴重度，因此顏色固定。 */
+function scoreDep(){
+  const ans = Object.values(S.dep);
+  const f = document.getElementById('depFill');
+  const out = document.getElementById('depResult');
+
+  f.style.width = (ans.length / DEP.length * 100) + '%';
+
+  if (ans.length < DEP.length){
+    out.textContent = `已回答 ${ans.length} / ${DEP.length} 題`;
+    return;
+  }
+  const often = ans.filter(v=>v===2).length;
+  const some  = ans.filter(v=>v===1).length;
+  S.depAnswers = {often, some}; save(S);
+
+  out.textContent =
+    `六個情境裡，你有 ${often} 個「經常」、${some} 個「有時」。` +
+    (often + some > 0
+      ? '這些就是你比較容易被勾起來的時候，急救包可以先從這幾個情境練習。'
+      : '目前沒有特別容易被勾起來的情境。');
+}
+
+/* ============================================================
+   本地通知排程
+   - 裝置上（Capacitor）：透過 LocalNotifications 原生外掛
+   - 瀏覽器：整段靜默略過，其餘功能不受影響
+   - 刻意不使用精準鬧鐘（SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM）：
+     每日衛教提醒不需要分秒精準，且該權限在 Play 上僅限鬧鐘類 app，
+     宣告了反而是上架風險。實際送達可能有數分鐘誤差，屬預期行為。
+   ============================================================ */
+const LN = () => (window.Capacitor && window.Capacitor.Plugins &&
+                  window.Capacitor.Plugins.LocalNotifications) || null;
+const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform &&
+                          window.Capacitor.isNativePlatform());
+
+const NOTIF_ID_BASE = 2000;   // 每日訊息：2000 + (offset + 100)
+const CHECKIN_ID_BASE = 5000; // 追蹤評估提醒
+
+/* 產生從明天起、到療程結束為止的完整排程 */
+function buildSchedule(){
+  const hour = S.notifHour ?? 19;
+  const hasQuit = !!S.quitDate;
+  const anchor = hasQuit ? S.quitDate : (S.startDate || today());
+  const lastOffset = hasQuit ? 56 : 27;     // 戒菸日後 8 週 / 技巧建立 4 週
+  const firstOffset = hasQuit ? -42 : 0;    // 戒菸日前 6 週
+
+  const out = [];
+  const now = new Date();
+  for (let d = firstOffset; d <= lastOffset; d++){
+    const at = new Date(anchor + 'T00:00:00');
+    at.setDate(at.getDate() + d);
+    at.setHours(hour, 0, 0, 0);
+    if (at <= now) continue;                // 已過去的不排
+
+    const { m, phase } = msgAt(d, hasQuit);
+    out.push({
+      id: NOTIF_ID_BASE + (d + 100),
+      title: S.discreet ? '好好呼吸' : ('好好呼吸 · ' + m[0]),
+      body:  S.discreet ? '今天有一則訊息，打開看看。' : m[1],
+      schedule: { at, allowWhileIdle: false },
+      extra: { kind:'daily', offset:d, phase }
+    });
+  }
+
+  /* 追蹤評估提醒：第 14 天，之後每月一次至第 7 個月 */
+  const base = S.startDate || today();
+  [14,30,60,90,120,150,180,210].forEach((d,i)=>{
+    const at = new Date(base + 'T00:00:00');
+    at.setDate(at.getDate() + d);
+    at.setHours(hour, 30, 0, 0);
+    if (at <= now) return;
+    out.push({
+      id: CHECKIN_ID_BASE + i,
+      title: '好好呼吸',
+      body: S.discreet ? '有一個追蹤紀錄要填。' : '花 10 秒記一下：最近一次是什麼時候？',
+      schedule: { at, allowWhileIdle: false },
+      extra: { kind:'checkin', day:d }
+    });
+  });
+
+  return out;
+}
+
+async function ensurePermission(){
+  const ln = LN();
+  if (!ln) return false;
+  let p = await ln.checkPermissions();
+  if (p.display !== 'granted') p = await ln.requestPermissions();
+  return p.display === 'granted';
+}
+
+/* 全部取消後重排。戒菸日、時間、低調模式改變時都要呼叫。 */
+async function reschedule(){
+  const ln = LN();
+  if (!ln || !S.notifOn) { renderNotif(); return; }
+  try{
+    const pending = await ln.getPending();
+    if (pending.notifications.length){
+      await ln.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
+    }
+    const list = buildSchedule();
+    /* Android 的待處理鬧鐘有數量上限，分批送出比較保險 */
+    for (let i=0; i<list.length; i+=50){
+      await ln.schedule({ notifications: list.slice(i, i+50) });
+    }
+    S.notifCount = list.length; await save(S);
+  }catch(e){
+    console.warn('排程失敗', e);
+    S.notifOn = false; await save(S);
+  }
+  renderNotif();
+}
+
+async function toggleNotif(){
+  if (!isNative()){
+    document.getElementById('notifStatus').textContent =
+      '提醒通知只在安裝版的 app 裡運作，用瀏覽器開啟時不會排程。';
+    return;
+  }
+  if (S.notifOn){
+    S.notifOn = false; await save(S);
+    const ln = LN();
+    if (ln){
+      const pending = await ln.getPending();
+      if (pending.notifications.length){
+        await ln.cancel({ notifications: pending.notifications.map(n=>({id:n.id})) });
+      }
+    }
+    renderNotif();
+    return;
+  }
+  const ok = await ensurePermission();
+  if (!ok){
+    document.getElementById('notifStatus').textContent =
+      '沒有通知權限，可以到系統設定裡開啟。';
+    return;
+  }
+  S.notifOn = true; await save(S);
+  await reschedule();
+}
+
+async function toggleDiscreet(){
+  S.discreet = !S.discreet; await save(S);
+  await reschedule();
+}
+async function onNotifPrefChange(){
+  S.notifHour = +document.getElementById('fHour').value;
+  await save(S);
+  await reschedule();
+}
+
+function renderNotif(){
+  const on = !!S.notifOn;
+  document.getElementById('notifToggle').setAttribute('aria-pressed', on);
+  document.getElementById('notifLabel').textContent = on ? '每日提醒已開啟' : '開啟每日提醒';
+  document.getElementById('notifHint').textContent = on ? '點一下可以關閉' : '需要允許通知權限';
+  document.getElementById('discreetBtn').setAttribute('aria-pressed', !!S.discreet);
+  document.getElementById('fHour').value = S.notifHour ?? 19;
+  document.getElementById('notifStatus').textContent =
+    on && S.notifCount ? `已排入 ${S.notifCount} 則提醒，最後一則在療程結束當天。`
+    : (isNative() ? '' : '目前在瀏覽器中，提醒功能不會啟動。');
+}
+
+/* 回到前景時重排：系統重開機、時區變動、或使用者在設定裡動過權限，
+   都可能讓既有排程失效。 */
+function watchResume(){
+  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!App) return;
+  App.addListener('appStateChange', async ({isActive}) => {
+    if (isActive && S.notifOn) await reschedule();
+  });
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+function render(){
+  // 呼吸計
+  const C = 2*Math.PI*102;
+  const prog = document.getElementById('prog');
+  let n='—', u='還沒開始', st='', pct=0;
+
+  if (S.quitDate){
+    const d = dayDiff(S.quitDate, today());
+    if (d < 0){ n = -d; u = '天後開始'; st = '準備期'; pct = (42+d)/42; }
+    else { n = d; u = d===0 ? '戒菸日' : '天未使用'; st = d>=30 ? '已達 30 天' : '進行中'; pct = Math.min(d/56,1); }
+  } else if (S.startDate){
+    n = dayDiff(S.startDate, today())+1; u='天技巧建立'; st='尚未設戒菸日'; pct = Math.min(n/28,1);
+  }
+  document.getElementById('dayNum').textContent = n;
+  document.getElementById('dayUnit').textContent = u;
+  document.getElementById('dayState').textContent = st;
+  prog.setAttribute('stroke-dasharray', C);
+  prog.setAttribute('stroke-dashoffset', C*(1-Math.max(0,Math.min(pct,1))));
+
+  document.getElementById('topMeta').textContent =
+    S.quitDate ? '戒菸日 ' + S.quitDate : (S.startDate ? '技巧建立期' : '尚未設定');
+
+  // 每日訊息
+  if (S.startDate || S.quitDate){
+    const {m, phase} = pickMsg();
+    document.getElementById('msgPhase').textContent = phase;
+    document.getElementById('dailyMsg').innerHTML =
+      `<span class="tagline">${m[0]}</span><br>${m[1]}`;
+  }
+
+  // 今日是否已紀錄
+  const ci = S.checkins.find(c=>c.date===today());
+  document.getElementById('ciDone').textContent = ci ? '今天已紀錄，明天見。' : '';
+  document.querySelectorAll('[data-ci]').forEach(b=>
+    b.setAttribute('aria-pressed', ci && ci.v===b.dataset.ci));
+
+  renderTrack();
+}
+
+function renderTrack(){
+  const cs = [...S.checkins].sort((a,b)=>a.date<b.date?1:-1);
+  document.getElementById('statN').textContent = cs.length;
+
+  const last = cs[0];
+  const ppa = last ? (last.v==='abst') : null;
+  const sp = document.getElementById('statPPA');
+  sp.className = 'stat ' + (ppa===null?'':ppa?'yes':'no');
+  sp.querySelector('.v').textContent = ppa===null ? '—' : ppa ? '是' : '否';
+
+  // 連續未使用
+  let streak = 0;
+  for (const c of cs){ if (c.v==='abst'||c.v==='cut'){ streak++; } else break; }
+  document.getElementById('statStreak').querySelector('.v').textContent = streak || '—';
+
+  // 重複點盛行：兩次以上（相隔 ≥ 25 天）皆為 30 天未使用
+  const abst = cs.filter(c=>c.v==='abst');
+  let rep = '—';
+  if (abst.length>=2){
+    rep = dayDiff(abst[abst.length-1].date, abst[0].date) >= 25 ? '是' : '否';
+  } else if (abst.length<2 && cs.length>1) rep = '否';
+  document.getElementById('statRep').textContent = rep;
+
+  // 時程
+  const base = S.startDate;
+  const sched = document.getElementById('schedule');
+  if (base){
+    const pts = [[14,'第 14 天'],[30,'第 1 個月'],[60,'第 2 個月'],[90,'第 3 個月'],
+                 [120,'第 4 個月'],[150,'第 5 個月'],[180,'第 6 個月'],[210,'第 7 個月 · 主要結果']];
+    const el = dayDiff(base, today());
+    sched.innerHTML = pts.map(([d,label])=>{
+      const done = el>=d;
+      return `<li><span class="dot ${done?'abst':'use'}" style="${done?'':'background:rgba(14,27,44,.15)'}"></span>
+        <span class="when">D${d}</span><span style="${done?'':'color:var(--ink-35)'}">${label}</span></li>`;
+    }).join('');
+  } else sched.innerHTML = '<li class="muted">設定後開始計算。</li>';
+
+  // 紀錄
+  const L = {use:['use','7 天內抽過'],cut:['cut','8–30 天前'],abst:['abst','超過 30 天未使用']};
+  document.getElementById('logList').innerHTML = cs.length
+    ? cs.slice(0,20).map(c=>`<li><span class="dot ${L[c.v][0]}"></span>
+        <span class="when">${c.date.slice(5)}</span><span>${L[c.v][1]}</span></li>`).join('')
+    : '<li class="muted">還沒有紀錄。</li>';
+}
+
+/* ============================================================
+   互動
+   ============================================================ */
+function go(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on', s.id==='v-'+v));
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.go===v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>go(t.dataset.go));
+
+document.querySelectorAll('[data-ci]').forEach(b=>b.onclick=async()=>{
+  S.checkins = S.checkins.filter(c=>c.date!==today());
+  S.checkins.push({date:today(), v:b.dataset.ci});
+  if (!S.startDate) S.startDate = today();
+  await save(S); render();
+});
+
+document.querySelectorAll('[data-sos]').forEach(b=>b.onclick=()=>{
+  const pool = SOS[b.dataset.sos];
+  const out = document.getElementById('sosOut');
+  out.textContent = pool[Math.floor(Math.random()*pool.length)];
+  out.classList.add('show');
+});
+
+function mkScale(id, key){
+  const el = document.getElementById(id);
+  el.innerHTML = [1,2,3,4,5].map(v=>
+    `<button data-k="${key}" data-v="${v}" aria-pressed="${S[key]===v}">${v}</button>`).join('');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    S[b.dataset.k] = +b.dataset.v; save(S); mkScale(id,key);
+  });
+}
+
+async function saveProfile(){
+  S.age = document.getElementById('fAge').value;
+  S.brand = document.getElementById('fBrand').value.trim();
+  const q = document.getElementById('fQuit').value;
+  const quitChanged = (S.quitDate || '') !== q;
+  S.quitDate = q || null;
+  if (!S.startDate) S.startDate = today();
+  await save(S);
+  if (quitChanged) await reschedule();   // 戒菸日一改，整份排程要重算
+  render(); go('today');
+}
+
+/* 呼吸引導 4-7-8，共約 60 秒 */
+let bTimer=null, bStep=0;
+const CUES=[['吸氣',4],['屏住',7],['吐氣',8]];
+function startBreath(){
+  document.getElementById('breathOv').classList.add('show');
+  bStep=0; let cycle=1, t=0, i=0;
+  const cue=document.getElementById('breathCue'), cnt=document.getElementById('breathCount');
+  const tick=()=>{
+    const [label,len]=CUES[i];
+    cue.textContent = label;
+    cnt.textContent = `第 ${cycle} 輪 / 共 3 輪 · ${len-t} 秒`;
+    t++;
+    if (t>len){ t=0; i++; if(i>=CUES.length){ i=0; cycle++; if(cycle>3){ stopBreath(); return; } } }
+  };
+  tick(); bTimer=setInterval(tick,1000);
+}
+function stopBreath(){
+  clearInterval(bTimer);
+  document.getElementById('breathOv').classList.remove('show');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') stopBreath(); });
+
+function exportData(){
+  const rows = [['date','response','abstinent_30d']];
+  [...S.checkins].sort((a,b)=>a.date<b.date?-1:1)
+    .forEach(c=>rows.push([c.date, c.v, c.v==='abst'?1:0]));
+  rows.push([]);
+  rows.push(['quit_date',S.quitDate||'']);
+  rows.push(['start_date',S.startDate||'']);
+  rows.push(['motivation',S.motivation]);
+  rows.push(['confidence',S.confidence]);
+  rows.push(['dependence_score',S.depScore??'']);
+  const csv = '\uFEFF' + rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'quitvape_' + today() + '.csv';
+  a.click();
+}
+
+/* ============================================================
+   啟動
+   ============================================================ */
+function openIntro(){
+  document.getElementById('intro').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  window.scrollTo(0,0);
+}
+async function closeIntro(){
+  document.getElementById('intro').classList.remove('show');
+  document.body.style.overflow = '';
+  S.introSeen = true; await save(S);
+}
+
+(async function init(){
+  const saved = await load();
+  if (saved) S = Object.assign(S, saved);
+  if (!S.introSeen) openIntro();
+  document.getElementById('fAge').value = S.age || '';
+  document.getElementById('fBrand').value = S.brand || '';
+  document.getElementById('fQuit').value = S.quitDate || '';
+  mkScale('sMot','motivation');
+  mkScale('sConf','confidence');
+  renderDep();
+  renderNotif();
+  watchResume();
+  if (S.notifOn) reschedule();
+  render();
+})();
+</script>
+</body>
+</html>
 
