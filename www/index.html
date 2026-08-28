@@ -164,21 +164,56 @@ button{font-family:inherit}
 /* 呼吸引導全螢幕 */
 .breath-overlay{
   position:fixed;inset:0;background:var(--ink);color:#fff;z-index:60;
-  display:none;place-items:center;text-align:center;padding:24px;
+  display:none;text-align:center;
+  overflow-y:auto;                     /* 內容比視窗高時要能捲，否則結束鍵按不到 */
+  -webkit-overflow-scrolling:touch;
 }
-.breath-overlay.show{display:grid}
-.orb{width:180px;height:180px;border-radius:50%;margin:0 auto 30px;
-  background:radial-gradient(circle at 35% 30%, var(--breath), var(--teal));
-  animation:orb 19s ease-in-out infinite}
-@keyframes orb{
-  0%,100%{transform:scale(.62)}
-  21%    {transform:scale(1)}
-  58%    {transform:scale(1)}
-  95%    {transform:scale(.62)}
+.breath-overlay.show{display:block}
+.breath-overlay > div{                 /* 內容夠短時置中，過長時從頂端開始並可捲動 */
+  min-height:100%;display:flex;flex-direction:column;justify-content:center;
+  padding:24px 24px calc(32px + env(safe-area-inset-bottom));
 }
+/* 呼吸圖形：由 JS 依當前階段設定 transition 與 scale，不用固定 keyframe，
+   因此同一個容器可以跑任何節律、裝任何形狀 */
+.orb{width:180px;height:180px;margin:0 auto 30px;display:grid;place-items:center;
+  transform:scale(.62);transition:transform 4s ease-in-out}
+.orb svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* 形狀選擇列 */
+.shapes{display:flex;gap:9px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+.shape-btn{width:44px;height:44px;padding:7px;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.07);border:1.5px solid transparent;
+  display:grid;place-items:center;transition:all .16s ease}
+.shape-btn svg{width:100%;height:100%;display:block}
+.shape-btn[aria-pressed="true"]{border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.16)}
+.shape-hint{font-size:11px;opacity:.4;letter-spacing:.1em;margin-top:12px}
 .breath-cue{font-size:22px;font-weight:700;letter-spacing:.12em;min-height:34px}
 .breath-count{font-family:var(--font-num);font-size:13px;opacity:.55;letter-spacing:.18em;margin-top:12px}
 .breath-overlay .btn{max-width:280px;margin:34px auto 0}
+.run-title{font-size:13px;letter-spacing:.16em;opacity:.5;margin-bottom:26px}
+.run-body{font-size:16px;line-height:1.85;opacity:.85;max-width:340px;margin:16px auto 0;min-height:84px}
+.run-actions{display:flex;gap:10px;max-width:280px;margin:30px auto 0}
+.run-actions .btn{margin:0;flex:1}
+
+/* 練習庫 */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{border:1.5px solid var(--line);background:var(--paper);color:var(--ink-60);
+  padding:7px 13px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all .16s ease}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.plist{display:grid;gap:9px}
+.pitem{display:flex;gap:13px;align-items:center;text-align:left;width:100%;
+  border:1.5px solid var(--line);background:var(--paper);border-radius:var(--r-s);
+  padding:13px 15px;cursor:pointer;font-family:inherit;color:var(--ink);
+  transition:border-color .16s ease}
+.pitem:hover{border-color:var(--teal)}
+.pitem .pmain{flex:1;min-width:0}
+.pitem b{display:block;font-size:15px;font-weight:700}
+.pitem small{display:block;color:var(--ink-35);font-size:12.5px;margin-top:3px;line-height:1.55}
+.pitem .pdur{font-family:var(--font-num);font-size:12px;color:var(--teal);
+  font-weight:700;white-space:nowrap}
+.pitem.info .pdur{color:var(--ink-35)}
+.pitem.info{background:rgba(14,27,44,.03)}
 
 /* ============================================================
    追蹤
@@ -376,7 +411,18 @@ input:focus,select:focus{border-color:var(--teal);outline:none}
         <button class="sos-btn slip wide" data-sos="slip"><i>SLIP</i>剛剛抽了，想放棄</button>
       </div>
       <div class="sos-out" id="sosOut"></div>
-      <button class="btn dark" style="margin-top:14px" onclick="startBreath()">60 秒呼吸引導</button>
+      <button class="btn dark" style="margin-top:14px" onclick="runPractice('exhale')">馬上做一次呼吸引導</button>
+    </div>
+
+    <div class="card">
+      <h2>放鬆與因應技巧庫</h2>
+      <p class="muted" style="margin:0 0 14px;font-size:14px">十五種臨床上常見的技巧。不用全部學會，找到兩三個對你有用的就夠了。</p>
+
+      <button class="btn ghost" style="margin-bottom:16px" onclick="randomPractice()">隨機來一個</button>
+
+      <div class="chips" id="pChips"></div>
+      <div class="plist" id="pList"></div>
+      <button class="btn ghost" id="pMore" style="margin-top:12px" onclick="togglePAll()">看全部 15 種</button>
     </div>
 
     <div class="card">
@@ -507,13 +553,20 @@ input:focus,select:focus{border-color:var(--teal);outline:none}
   </section>
 </div>
 
-<!-- 呼吸引導 -->
-<div class="breath-overlay" id="breathOv" role="dialog" aria-modal="true" aria-label="呼吸引導">
+<!-- 練習引導（呼吸節律與分步引導共用） -->
+<div class="breath-overlay" id="runOv" role="dialog" aria-modal="true" aria-labelledby="runTitle">
   <div>
-    <div class="orb"></div>
-    <div class="breath-cue" id="breathCue">準備</div>
-    <div class="breath-count" id="breathCount"></div>
-    <button class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="stopBreath()">結束</button>
+    <div class="run-title" id="runTitle">練習</div>
+    <div class="orb" id="runOrb"></div>
+    <div class="breath-cue" id="runCue">準備</div>
+    <div class="breath-count" id="runCount"></div>
+    <div class="run-body" id="runBody"></div>
+    <div class="run-actions">
+      <button class="btn ghost" id="runNext" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="runAdvance()">下一步</button>
+      <button class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="stopRun()">結束</button>
+    </div>
+    <div class="shapes" id="runShapes" role="group" aria-label="選擇呼吸圖形"></div>
+    <div class="shape-hint" id="runShapeHint"></div>
   </div>
 </div>
 
@@ -580,6 +633,7 @@ let S = {
   age:'', brand:'', quitDate:null, startDate:null,
   motivation:0, confidence:0, dep:{}, depScore:null,
   notifOn:false, notifHour:19, discreet:false, notifCount:0, introSeen:false,
+  orbShape:'orb',
   checkins:[]   // {date:'YYYY-MM-DD', v:'use'|'cut'|'abst'}
 };
 
@@ -1045,27 +1099,395 @@ async function saveProfile(){
   render(); go('today');
 }
 
-/* 呼吸引導 4-7-8，共約 60 秒 */
-let bTimer=null, bStep=0;
-const CUES=[['吸氣',4],['屏住',7],['吐氣',8]];
-function startBreath(){
-  document.getElementById('breathOv').classList.add('show');
-  bStep=0; let cycle=1, t=0, i=0;
-  const cue=document.getElementById('breathCue'), cnt=document.getElementById('breathCount');
-  const tick=()=>{
-    const [label,len]=CUES[i];
-    cue.textContent = label;
-    cnt.textContent = `第 ${cycle} 輪 / 共 3 輪 · ${len-t} 秒`;
-    t++;
-    if (t>len){ t=0; i++; if(i>=CUES.length){ i=0; cycle++; if(cycle>3){ stopBreath(); return; } } }
-  };
-  tick(); bTimer=setInterval(tick,1000);
+/* ============================================================
+   放鬆與因應技巧庫
+
+   分類：呼吸 / 身體 / 注意力 / 生理回饋
+   run.type：
+     breath —— 依節律循環，光球隨吸吐脹縮
+     steps  —— 分步引導，可自動推進或手動按「下一步」
+     info   —— 純說明，沒有引導流程（生理回饋類：本程式不量測、
+               不解讀任何生理訊號，僅說明其存在並建議諮詢專業）
+   ============================================================ */
+const PRACTICE = [
+  /* ---------- 呼吸 ---------- */
+  { id:'diaphragm', cat:'呼吸', n:'橫膈膜呼吸', dur:'約 1 分鐘', starter:true,
+    why:'最基礎的一種，把呼吸從胸口帶回腹部。其他呼吸練習都建立在這個之上。',
+    run:{ type:'breath', cycles:6, phases:[['吸氣',4],['吐氣',6]],
+          body:'一手放胸口、一手放肚子。吸氣時讓肚子的那隻手先動，胸口的手盡量不動。' } },
+
+  { id:'exhale', cat:'呼吸', n:'延長吐氣呼吸', dur:'約 80 秒', starter:true,
+    why:'吐氣比吸氣長時，副交感神經會被帶起來，心跳和緊繃感跟著下降。渴望當下最好用的一個。',
+    run:{ type:'breath', cycles:8, phases:[['吸氣',4],['吐氣',6]],
+          body:'用鼻子吸、嘴巴慢慢吐，像在吹一根蠟燭但不把它吹熄。',
+          alt:{ label:'改用 4-7-8 節律', cycles:3, phases:[['吸氣',4],['屏住',7],['吐氣',8]],
+                warn:true } } },
+
+  { id:'box', cat:'呼吸', n:'箱式呼吸', dur:'約 80 秒',
+    why:'四拍等長，吸、停、吐、停。好記，緊張到腦子一片空白時也做得出來。',
+    warn:true,
+    run:{ type:'breath', cycles:5, phases:[['吸氣',4],['屏住',4],['吐氣',4],['停住',4]],
+          body:'想像沿著一個正方形的四個邊移動，每一邊四拍。' } },
+
+  { id:'resonant', cat:'呼吸', n:'共振頻率呼吸', dur:'約 100 秒',
+    why:'每分鐘約六次，接近心率變異度的共振點。呼吸類裡生理效果證據相對紮實的一種。',
+    run:{ type:'breath', cycles:10, phases:[['吸氣',5],['吐氣',5]],
+          body:'吸五秒、吐五秒，平穩、不用刻意深。維持節奏比吸得多更重要。' } },
+
+  /* ---------- 身體 ---------- */
+  { id:'pmr', cat:'身體', n:'漸進式肌肉放鬆', dur:'約 2 分鐘', starter:true,
+    why:'依序繃緊再放鬆各個肌群。整個放鬆訓練家族裡研究基礎最厚的一種，但需要一點時間。',
+    run:{ type:'steps', auto:true, items:[
+      ['雙手',15,'雙手用力握拳，撐住五秒⋯⋯然後突然鬆開。感覺鬆開的那一下。'],
+      ['前臂與上臂',15,'手肘彎起來，把手臂繃緊五秒⋯⋯放鬆，讓手臂沉下去。'],
+      ['肩膀',15,'肩膀往耳朵方向聳起來，五秒⋯⋯放掉，讓它自己落下。'],
+      ['臉部',15,'皺眉、閉緊眼睛、咬住牙關，五秒⋯⋯全部鬆開。'],
+      ['胸腹',15,'深吸一口氣憋住，把胸腹繃緊，五秒⋯⋯吐氣，鬆開。'],
+      ['大腿',15,'雙腿伸直、大腿用力，五秒⋯⋯放鬆。'],
+      ['小腿與腳',15,'腳尖往上勾，小腿繃緊，五秒⋯⋯鬆開。'],
+      ['整體',15,'從頭到腳感覺一次。哪裡還是緊的，就在那裡多留一下。'] ] } },
+
+  { id:'autogenic', cat:'身體', n:'自律訓練法', dur:'約 2 分鐘',
+    why:'重複幾句自我暗示，讓身體跟著語句放鬆。歐洲臨床用得多，需要一點練習才有感覺。',
+    run:{ type:'steps', auto:true, items:[
+      ['右手',20,'心裡慢慢重複：我的右手很沉、很重。不用用力想，讓句子自己重複。'],
+      ['左手',20,'我的左手很沉、很重。'],
+      ['雙臂溫暖',20,'我的雙臂溫暖而放鬆。'],
+      ['呼吸',20,'我的呼吸平穩、規律。'],
+      ['心跳',20,'我的心跳平穩、安定。'],
+      ['額頭',20,'我的額頭涼爽、舒服。'] ] } },
+
+  { id:'bodyscan', cat:'身體', n:'身體掃描', dur:'約 2 分鐘',
+    why:'注意力依序掃過身體各部位，只是觀察，不做評價、不試圖改變。正念取向的入門技巧。',
+    run:{ type:'steps', auto:true, items:[
+      ['腳',15,'把注意力放到雙腳。有什麼感覺？溫度、壓力、麻或沒感覺，都可以。'],
+      ['小腿與膝蓋',15,'往上移到小腿和膝蓋。不用改變什麼，只要注意到。'],
+      ['大腿與臀部',15,'再往上。感覺身體與椅子或地面接觸的地方。'],
+      ['腹部',15,'注意腹部隨呼吸起伏。'],
+      ['胸口',15,'胸口是鬆的還是緊的？就這樣看著它。'],
+      ['雙手與手臂',15,'從指尖往上，掃過雙手和手臂。'],
+      ['肩頸',15,'肩膀和脖子。這裡常常最緊。'],
+      ['臉與頭',15,'下巴、眼睛周圍、額頭。掃完了，整個身體一起感覺一次。'] ] } },
+
+  { id:'movement', cat:'身體', n:'動作型放鬆', dur:'約 100 秒',
+    why:'伸展與緩慢動作。靜態技巧坐不住的時候，這一種通常比較做得下去。',
+    run:{ type:'steps', auto:true, items:[
+      ['站起來',20,'先站起來，雙腳與肩同寬。光是換姿勢就會改變一些東西。'],
+      ['肩膀繞圈',20,'肩膀向後繞圈，慢慢地，五次。'],
+      ['頸部側伸',20,'頭往右肩靠，停住數五下，換左邊。不要用手壓。'],
+      ['向上伸展',20,'雙手往上伸直、踮腳，吸氣⋯⋯吐氣時整個放下來。'],
+      ['甩手走動',20,'原地走幾步，手自然甩動。動作本身就是出口。'] ] } },
+
+  /* ---------- 注意力 ---------- */
+  { id:'imagery', cat:'注意力', n:'引導式意象', dur:'約 100 秒',
+    why:'想像一個讓你放鬆的場景，並帶入感官細節。細節越具體，效果越明顯。',
+    run:{ type:'steps', auto:true, items:[
+      ['選一個地方',20,'想一個你覺得安全、放鬆的地方。真實去過的或想像的都可以。'],
+      ['看見',20,'那裡看起來是什麼樣子？光線、顏色、遠處有什麼。'],
+      ['聽見',20,'有什麼聲音？風、水、人聲，或者很安靜。'],
+      ['感覺',20,'皮膚上的感覺呢？溫度、風、地面的觸感。'],
+      ['停留',20,'在這裡多待一下。要離開時，把那個放鬆的感覺帶著走。'] ] } },
+
+  { id:'mindful', cat:'注意力', n:'正念呼吸', dur:'約 100 秒',
+    why:'不改變呼吸，只是覺察它。念頭飄走是正常的，發現了再帶回來就是練習本身。',
+    run:{ type:'steps', auto:true, items:[
+      ['安頓',25,'不用調整呼吸，就讓它自然。注意空氣進出鼻孔的感覺。'],
+      ['數息',25,'吐氣時默數，一到十，然後重新開始。'],
+      ['分心是正常的',25,'發現自己在想別的事？很好，那就是你注意到了。回到呼吸就好。'],
+      ['不評價',25,'不用做得好。做不好也是練習的一部分。'] ] } },
+
+  { id:'urge', cat:'注意力', n:'衝動衝浪', dur:'約 2 分鐘', starter:true,
+    why:'把渴望當成一道會漲也會退的浪，觀察它而不順從、也不硬壓。成癮領域復發預防的標準做法，比一般放鬆技巧更貼近你現在的處境。',
+    run:{ type:'steps', auto:false, items:[
+      ['先承認它',20,'不用趕走它。就對自己說：現在有一股想抽的衝動。'],
+      ['找到它在哪',20,'這股衝動在身體的哪裡？喉嚨、胸口、手、嘴巴？找到最明顯的那個位置。'],
+      ['給它一個強度',20,'零到十分，現在是幾分？記住這個數字。'],
+      ['看著它變化',30,'像看一道浪。它在變強、變弱，還是移動位置？不用做任何事，只要看著。'],
+      ['再評一次',20,'現在幾分了？多數人會發現數字降了。就算沒降，你也已經撐過了這一段。'] ] } },
+
+  { id:'ground', cat:'注意力', n:'接地技巧 5-4-3-2-1', dur:'依你的速度',
+    why:'用感官把注意力從腦中的想法拉回當下環境。情緒衝上來、腦子停不下來時最有效。',
+    run:{ type:'steps', auto:false, items:[
+      ['五樣看得到的',0,'環顧四周，說出五樣你看得到的東西。可以出聲，也可以在心裡。'],
+      ['四樣摸得到的',0,'四樣你現在摸得到的。椅子、衣服、手機的重量、地板。'],
+      ['三樣聽得到的',0,'三個聲音。遠的近的都算。'],
+      ['兩樣聞得到的',0,'兩種氣味。聞不到就想兩種你喜歡的味道。'],
+      ['一樣嚐得到的',0,'一個味道。或者喝一口水，注意它的溫度。'] ] } },
+
+  { id:'delay', cat:'注意力', n:'注意力轉移與延遲', dur:'約 45 秒',
+    why:'不跟衝動正面對決，改成拖過它的高峰。急救包裡那四招就是這一類。',
+    run:{ type:'steps', auto:false, items:[
+      ['延遲',15,'跟自己說：十分鐘後再決定。不是永遠不行，只是現在先不。'],
+      ['換場景',15,'離開你現在這個空間。走到別的房間、走出門口、上下一層樓都行。'],
+      ['換動作',15,'讓手忙起來：倒一杯水、洗把臉、拿東西握著。空著的手最危險。'] ] } },
+
+  /* ---------- 生理回饋（需專業設備，本程式不提供量測） ---------- */
+  { id:'hrv', cat:'生理回饋', n:'心率變異度生物回饋', dur:'需專業設備', info:true,
+    why:'搭配感測器即時顯示心率變異度，讓人看著數據調整呼吸節奏，學會有意識地影響自律神經反應。',
+    run:{ type:'info', body:'這需要專用的感測器與軟體，通常在醫院的身心科、復健科或臨床心理單位進行，由受過訓練的人員操作與判讀。\n\n這個程式不量測、也不解讀任何生理訊號。上面的「共振頻率呼吸」是同一個原理裡不需要設備的部分——固定在每分鐘約六次的節律，只是少了即時回饋的畫面。\n\n有興趣的話，可以問你的醫師或心理師所在的機構有沒有提供。' } },
+
+  { id:'emg', cat:'生理回饋', n:'肌電與體溫生物回饋', dur:'需專業設備', info:true,
+    why:'以電極或溫度感測器量測肌肉緊張度、末梢體溫，把身體的緊繃程度變成看得見的數字。',
+    run:{ type:'info', body:'屬於臨床設備，需由專業人員操作，多用於慢性疼痛、緊張型頭痛與焦慮相關問題的處置。\n\n這個程式不量測、也不解讀任何生理訊號。不需要設備的替代做法是「漸進式肌肉放鬆」——同樣是在練習辨識並降低肌肉緊繃，只是靠自己的感覺而不是儀器。\n\n若你有相關困擾，請諮詢醫療人員。' } }
+];
+
+/* ============================================================
+   呼吸圖形
+
+   六種可自由切換，選擇會記住。全部只做等比縮放，
+   跟節律邏輯完全解耦——換形狀不影響任何計時。
+   ============================================================ */
+const SHAPES = {
+  orb: { n:'光球', svg:(c)=>`
+    <defs><radialGradient id="g${c}" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#7ADBD4"/><stop offset="100%" stop-color="#0E7C7B"/>
+    </radialGradient></defs>
+    <circle cx="50" cy="50" r="46" fill="url(#g${c})"/>` },
+
+  heart: { n:'愛心', svg:(c)=>`
+    <defs><radialGradient id="g${c}" cx="35%" cy="28%">
+      <stop offset="0%" stop-color="#FF8A6B"/><stop offset="100%" stop-color="#D93B1C"/>
+    </radialGradient></defs>
+    <path fill="url(#g${c})" d="M50,86 C18,62 6,46 6,31 C6,17 17,8 29,8
+      C38,8 46,13 50,21 C54,13 62,8 71,8 C83,8 94,17 94,31 C94,46 82,62 50,86 Z"/>` },
+
+  face: { n:'人臉', svg:(c)=>`
+    <defs><radialGradient id="g${c}" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#FFD98A"/><stop offset="100%" stop-color="#E9A93C"/>
+    </radialGradient></defs>
+    <circle cx="50" cy="50" r="45" fill="url(#g${c})"/>
+    <circle cx="35" cy="43" r="5" fill="#0E1B2C"/>
+    <circle cx="65" cy="43" r="5" fill="#0E1B2C"/>
+    <path d="M33 63 Q50 76 67 63" stroke="#0E1B2C" stroke-width="5"
+          stroke-linecap="round" fill="none"/>` },
+
+  flower: { n:'花', svg:(c)=>`
+    <defs><radialGradient id="g${c}" cx="50%" cy="50%">
+      <stop offset="0%" stop-color="#AFEDE7"/><stop offset="100%" stop-color="#3FB6AE"/>
+    </radialGradient></defs>
+    <g fill="url(#g${c})" opacity=".92">
+      ${[0,60,120,180,240,300].map(a=>
+        `<ellipse cx="50" cy="27" rx="13" ry="24" transform="rotate(${a} 50 50)"/>`).join('')}
+    </g>
+    <circle cx="50" cy="50" r="11" fill="#F2B950"/>` },
+
+  square: { n:'方框', svg:(c)=>`
+    <rect x="10" y="10" width="80" height="80" rx="16"
+          fill="none" stroke="#7ADBD4" stroke-width="7"/>
+    <rect x="24" y="24" width="52" height="52" rx="10" fill="#0E7C7B" opacity=".55"/>` },
+
+  wave: { n:'波浪', svg:(c)=>`
+    <defs><linearGradient id="g${c}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ADBD4"/><stop offset="100%" stop-color="#0E7C7B"/>
+    </linearGradient></defs>
+    <path fill="url(#g${c})" d="M2,52 Q26,26 50,52 T98,52 L98,96 L2,96 Z"/>
+    <path fill="none" stroke="#AFEDE7" stroke-width="4" stroke-linecap="round"
+          d="M2,52 Q26,26 50,52 T98,52"/>` }
+};
+const SHAPE_ORDER = ['orb','heart','face','flower','square','wave'];
+
+function shapeSVG(key, uid){
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+            role="img" aria-label="${SHAPES[key].n}">${SHAPES[key].svg(uid)}</svg>`;
 }
-function stopBreath(){
-  clearInterval(bTimer);
-  document.getElementById('breathOv').classList.remove('show');
+
+function paintShape(){
+  const key = SHAPES[S.orbShape] ? S.orbShape : 'orb';
+  document.getElementById('runOrb').innerHTML = shapeSVG(key, 'run');
 }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') stopBreath(); });
+
+function renderShapePicker(){
+  const box = document.getElementById('runShapes');
+  const cur = SHAPES[S.orbShape] ? S.orbShape : 'orb';
+  box.innerHTML = SHAPE_ORDER.map(k =>
+    `<button class="shape-btn" data-shape="${k}" aria-pressed="${k===cur}"
+             aria-label="${SHAPES[k].n}" title="${SHAPES[k].n}">${shapeSVG(k,'p'+k)}</button>`).join('');
+  box.querySelectorAll('[data-shape]').forEach(b => b.onclick = async () => {
+    S.orbShape = b.dataset.shape;
+    await save(S);
+    paintShape();
+    renderShapePicker();
+    document.getElementById('runShapeHint').textContent = SHAPES[S.orbShape].n;
+  });
+  document.getElementById('runShapeHint').textContent = SHAPES[cur].n;
+}
+
+const P_CATS = ['呼吸','身體','注意力','生理回饋'];
+let pFilter = null, pShowAll = false;
+
+function renderPractice(){
+  const chips = document.getElementById('pChips');
+  chips.innerHTML = P_CATS.map(c =>
+    `<button class="chip" data-cat="${c}" aria-pressed="${pFilter===c}">${c}</button>`).join('');
+  chips.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    pFilter = (pFilter === b.dataset.cat) ? null : b.dataset.cat;
+    pShowAll = true; renderPractice();
+  });
+
+  let list = PRACTICE;
+  if (pFilter) list = list.filter(x => x.cat === pFilter);
+  else if (!pShowAll) list = list.filter(x => x.starter);
+
+  document.getElementById('pList').innerHTML = list.map(x => `
+    <button class="pitem ${x.info?'info':''}" data-p="${x.id}">
+      <span class="pmain"><b>${x.n}</b><small>${x.why}</small></span>
+      <span class="pdur">${x.dur}</span>
+    </button>`).join('');
+  document.getElementById('pList').querySelectorAll('[data-p]')
+    .forEach(b => b.onclick = () => runPractice(b.dataset.p));
+
+  const more = document.getElementById('pMore');
+  more.style.display = pFilter ? 'none' : 'block';
+  more.textContent = pShowAll ? '只看最常用的幾種' : `看全部 ${PRACTICE.length} 種`;
+}
+function togglePAll(){ pShowAll = !pShowAll; renderPractice(); }
+function randomPractice(){
+  const pool = PRACTICE.filter(x => !x.info);
+  runPractice(pool[Math.floor(Math.random() * pool.length)].id);
+}
+
+/* ============================================================
+   引導執行器
+   ============================================================ */
+let RUN = null;
+
+function stopRun(){
+  if (RUN && RUN.timer) clearInterval(RUN.timer);
+  RUN = null;
+  document.getElementById('runOv').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function runPractice(id, useAlt){
+  const item = PRACTICE.find(x => x.id === id);
+  if (!item) return;
+
+  const ov = document.getElementById('runOv');
+  const orb = document.getElementById('runOrb');
+  const cue = document.getElementById('runCue');
+  const cnt = document.getElementById('runCount');
+  const body = document.getElementById('runBody');
+  const next = document.getElementById('runNext');
+
+  document.getElementById('runTitle').textContent = item.n;
+  ov.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  if (RUN && RUN.timer) clearInterval(RUN.timer);
+
+  const shapesBox = document.getElementById('runShapes');
+  const shapeHint = document.getElementById('runShapeHint');
+  paintShape();
+
+  /* --- 純說明：不跑流程 --- */
+  if (item.run.type === 'info'){
+    orb.style.display = 'none'; next.style.display = 'none';
+    shapesBox.style.display = 'none'; shapeHint.style.display = 'none';
+    cue.textContent = '需搭配專業設備';
+    cnt.textContent = '';
+    body.textContent = item.run.body;
+    RUN = { timer:null };
+    return;
+  }
+
+  next.style.display = item.run.type === 'steps' ? 'block' : 'none';
+
+  /* 形狀只在呼吸節律時有意義，分步引導不顯示圖形也不顯示選擇列 */
+  const showShapes = item.run.type === 'breath';
+  shapesBox.style.display = showShapes ? 'flex' : 'none';
+  shapeHint.style.display = showShapes ? 'block' : 'none';
+  if (showShapes) renderShapePicker();
+
+  /* --- 呼吸節律 --- */
+  if (item.run.type === 'breath'){
+    const cfg = (useAlt && item.run.alt) ? item.run.alt : item.run;
+    const phases = cfg.phases, cycles = cfg.cycles;
+    orb.style.display = 'block';
+    let note = item.run.body;
+    if (item.warn || cfg.warn || (useAlt && item.run.alt && item.run.alt.warn)){
+      note += '\n\n覺得頭暈就停下來，那是屏息造成的，不用勉強撐完。';
+    }
+    if (item.run.alt && !useAlt){
+      note += `\n\n（想試更強的節律？結束後點「${item.run.alt.label}」）`;
+    }
+    body.textContent = note;
+
+    let cyc = 1, pi = 0, t = 0;
+    const applyOrb = () => {
+      const [label, len] = phases[pi];
+      orb.style.transitionDuration = len + 's';
+      orb.style.transform =
+        label === '吸氣' ? 'scale(1)' :
+        label === '吐氣' ? 'scale(.62)' : orb.style.transform || 'scale(.62)';
+    };
+    const tick = () => {
+      const [label, len] = phases[pi];
+      if (t === 0) applyOrb();
+      cue.textContent = label;
+      cnt.textContent = `第 ${cyc} 輪 / 共 ${cycles} 輪 · ${len - t} 秒`;
+      t++;
+      if (t > len){
+        t = 0; pi++;
+        if (pi >= phases.length){
+          pi = 0; cyc++;
+          if (cyc > cycles){ finishRun(item); return; }
+        }
+      }
+    };
+    tick();
+    RUN = { timer:setInterval(tick, 1000), item };
+    return;
+  }
+
+  /* --- 分步引導 --- */
+  if (item.run.type === 'steps'){
+    orb.style.display = 'none';
+    const items = item.run.items;
+    let si = 0, t = 0;
+    const show = () => {
+      const [title, secs, text] = items[si];
+      cue.textContent = title;
+      body.textContent = text;
+      cnt.textContent = secs > 0
+        ? `${si+1} / ${items.length} · ${Math.max(secs - t, 0)} 秒`
+        : `${si+1} / ${items.length} · 慢慢來，好了再按下一步`;
+    };
+    const tick = () => {
+      const secs = items[si][1];
+      show();
+      if (item.run.auto && secs > 0){
+        t++;
+        if (t > secs) runAdvance();
+      }
+    };
+    RUN = {
+      timer:setInterval(tick, 1000), item,
+      advance: () => {
+        si++; t = 0;
+        if (si >= items.length){ finishRun(item); return; }
+        show();
+      }
+    };
+    show();
+    return;
+  }
+}
+
+function runAdvance(){ if (RUN && RUN.advance) RUN.advance(); }
+
+function finishRun(item){
+  if (RUN && RUN.timer) clearInterval(RUN.timer);
+  const orb = document.getElementById('runOrb');
+  orb.style.transitionDuration = '1.2s';
+  orb.style.transform = 'scale(.8)';
+  document.getElementById('runCue').textContent = '完成';
+  document.getElementById('runCount').textContent = '';
+  document.getElementById('runNext').style.display = 'none';
+  document.getElementById('runBody').textContent =
+    '做完了。如果還是很想抽，可以再做一次，或換一種試試。';
+  RUN = { timer:null };
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') stopRun(); });
 
 function exportData(){
   const rows = [['date','response','abstinent_30d']];
@@ -1109,6 +1531,7 @@ async function closeIntro(){
   mkScale('sConf','confidence');
   renderDep();
   renderNotif();
+  renderPractice();
   watchResume();
   if (S.notifOn) reschedule();
   render();
@@ -1116,4 +1539,3 @@ async function closeIntro(){
 </script>
 </body>
 </html>
-
