@@ -175,9 +175,34 @@ button{font-family:inherit}
 }
 /* 呼吸圖形：由 JS 依當前階段設定 transition 與 scale，不用固定 keyframe，
    因此同一個容器可以跑任何節律、裝任何形狀 */
+/* 呼吸幅度：吐到 .34、吸到 1.0，約 2.9 倍變化。
+   最大值維持 1.0（=180px）以免在窄螢幕溢出；要更強就把 --out 再調小。
+   JS 只設定 --dur 與 data-phase，其餘動作全部由 CSS 描述，
+   因此新增形狀不必動任何邏輯。 */
 .orb{width:180px;height:180px;margin:0 auto 30px;display:grid;place-items:center;
-  transform:scale(.62);transition:transform 4s ease-in-out}
+  --in:1; --out:.34; --dur:4s;
+  transform:scale(var(--out));
+  transition:transform var(--dur) ease-in-out}
+.orb[data-phase="in"]{transform:scale(var(--in))}
 .orb svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* 形狀專屬動作。屏息階段不改 data-phase，所以會停在原狀 —— 正是我們要的 */
+/* transform-box:fill-box 讓原點落在元素自身邊界框中心，
+   比 transform-origin:50px 50px 可靠（後者在舊版 Safari 的 SVG 內會失準） */
+.orb svg .petals,
+.orb svg .core,
+.orb svg .boxline{transform-box:fill-box;transform-origin:center;
+  transition:transform var(--dur) ease-in-out}
+.orb svg .petals{transform:rotate(0deg) scale(.74)}
+.orb[data-phase="in"] svg .petals{transform:rotate(26deg) scale(1)}
+.orb svg .core{transform:scale(.85)}
+.orb[data-phase="in"] svg .core{transform:scale(1.2)}
+.orb svg .boxline{transform:rotate(0deg)}
+.orb[data-phase="in"] svg .boxline{transform:rotate(45deg)}
+
+/* 波浪：橫向漂移獨立於呼吸節律，持續流動 */
+.orb svg .wave{animation:drift 9s linear infinite}
+@keyframes drift{ from{transform:translateX(0)} to{transform:translateX(-100px)} }
 
 /* 形狀選擇列 */
 .shapes{display:flex;gap:9px;justify-content:center;margin-top:28px;flex-wrap:wrap}
@@ -1265,24 +1290,32 @@ const SHAPES = {
     <defs><radialGradient id="g${c}" cx="50%" cy="50%">
       <stop offset="0%" stop-color="#AFEDE7"/><stop offset="100%" stop-color="#3FB6AE"/>
     </radialGradient></defs>
-    <g fill="url(#g${c})" opacity=".92">
+    <g class="petals" fill="url(#g${c})" opacity=".92">
       ${[0,60,120,180,240,300].map(a=>
         `<ellipse cx="50" cy="27" rx="13" ry="24" transform="rotate(${a} 50 50)"/>`).join('')}
     </g>
-    <circle cx="50" cy="50" r="11" fill="#F2B950"/>` },
+    <circle class="core" cx="50" cy="50" r="11" fill="#F2B950"/>` },
 
   square: { n:'方框', svg:(c)=>`
-    <rect x="10" y="10" width="80" height="80" rx="16"
+    <rect class="boxline" x="10" y="10" width="80" height="80" rx="16"
           fill="none" stroke="#7ADBD4" stroke-width="7"/>
     <rect x="24" y="24" width="52" height="52" rx="10" fill="#0E7C7B" opacity=".55"/>` },
 
   wave: { n:'波浪', svg:(c)=>`
-    <defs><linearGradient id="g${c}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#7ADBD4"/><stop offset="100%" stop-color="#0E7C7B"/>
-    </linearGradient></defs>
-    <path fill="url(#g${c})" d="M2,52 Q26,26 50,52 T98,52 L98,96 L2,96 Z"/>
-    <path fill="none" stroke="#AFEDE7" stroke-width="4" stroke-linecap="round"
-          d="M2,52 Q26,26 50,52 T98,52"/>` }
+    <defs>
+      <linearGradient id="g${c}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#7ADBD4"/><stop offset="100%" stop-color="#0E7C7B"/>
+      </linearGradient>
+      <clipPath id="c${c}"><rect x="0" y="0" width="100" height="100" rx="14"/></clipPath>
+    </defs>
+    <g clip-path="url(#c${c})">
+      <g class="wave">
+        <path fill="url(#g${c})"
+              d="M-100,52 Q-75,26 -50,52 T0,52 T50,52 T100,52 T150,52 L150,108 L-100,108 Z"/>
+        <path fill="none" stroke="#AFEDE7" stroke-width="4" stroke-linecap="round"
+              d="M-100,52 Q-75,26 -50,52 T0,52 T50,52 T100,52 T150,52"/>
+      </g>
+    </g>` }
 };
 const SHAPE_ORDER = ['orb','heart','face','flower','square','wave'];
 
@@ -1412,12 +1445,13 @@ function runPractice(id, useAlt){
     body.textContent = note;
 
     let cyc = 1, pi = 0, t = 0;
+    orb.dataset.phase = 'out';
     const applyOrb = () => {
       const [label, len] = phases[pi];
-      orb.style.transitionDuration = len + 's';
-      orb.style.transform =
-        label === '吸氣' ? 'scale(1)' :
-        label === '吐氣' ? 'scale(.62)' : orb.style.transform || 'scale(.62)';
+      orb.style.setProperty('--dur', len + 's');
+      /* 屏住／停住不改 data-phase，形狀就會維持在前一個狀態 */
+      if (label === '吸氣') orb.dataset.phase = 'in';
+      else if (label === '吐氣') orb.dataset.phase = 'out';
     };
     const tick = () => {
       const [label, len] = phases[pi];
@@ -1477,8 +1511,8 @@ function runAdvance(){ if (RUN && RUN.advance) RUN.advance(); }
 function finishRun(item){
   if (RUN && RUN.timer) clearInterval(RUN.timer);
   const orb = document.getElementById('runOrb');
-  orb.style.transitionDuration = '1.2s';
-  orb.style.transform = 'scale(.8)';
+  orb.style.setProperty('--dur', '1.2s');
+  orb.dataset.phase = 'in';
   document.getElementById('runCue').textContent = '完成';
   document.getElementById('runCount').textContent = '';
   document.getElementById('runNext').style.display = 'none';
