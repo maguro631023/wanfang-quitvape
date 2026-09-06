@@ -17,13 +17,13 @@ npm i @capacitor/core @capacitor/cli @capacitor/app @capacitor/local-notificatio
 
 mkdir www
 cp ../quit-vape-tw.html www/index.html          # 檔名必須是 index.html
-cp ../capacitor.config.json .                    # 記得改 appId
+cp ../capacitor.config.json .                    # appId 已設為 tw.gov.wanfang.quitvape
 
 npx cap add android
 npx cap sync
 ```
 
-`appId` 一旦上架就不能改，先確定要掛在哪個單位名下再填。
+`appId` 取自萬芳醫院網域 `wanfang.gov.tw` 的反向寫法。這個值一旦上架就永久固定，改動等同新上架一個 app。若最後決定改掛北醫的開發者帳號發布，要在 `npx cap add android` 之前改掉，之後再改就得重建 android 目錄。
 
 ## 2. 設定 targetSdk
 
